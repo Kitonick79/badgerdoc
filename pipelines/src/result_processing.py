@@ -10,7 +10,7 @@ from minio import Minio
 from minio import error as minioerr
 from pydantic import BaseModel, ValidationError
 
-from src import config, http_utils, log
+from src import config, http_utils, log, utils
 
 logger = log.get_logger(__file__)
 
@@ -373,7 +373,8 @@ def manage_result_for_annotator(
         "bucket": file_bucket,
         "input": merged_data.dict(exclude_none=True),
     }
-    headers = {"X-Current-Tenant": bucket, "Authorization": f"Bearer {token}"}
+    tenant = utils.tenant_from_bucket(bucket)
+    headers = {"X-Current-Tenant": tenant, "Authorization": f"Bearer {token}"}
     postprocessed_data = postprocess_result(
         data_for_postprocessor, headers=headers
     )

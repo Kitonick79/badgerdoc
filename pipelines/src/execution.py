@@ -17,7 +17,15 @@ from sqlalchemy import orm
 import src.db.models as dbm
 import src.db.service as service
 import src.result_processing as postprocessing
-from src import config, http_utils, log, schemas, service_token, webhooks
+from src import (
+    config,
+    http_utils,
+    log,
+    schemas,
+    service_token,
+    utils,
+    webhooks,
+)
 
 logger = log.get_logger(__file__)
 
@@ -265,16 +273,16 @@ class PipelineTask(BaseModel):
         pipeline_type = self.get_pipeline_type()
         initial_step = [step for step in self.steps if step.init_args][0]
         args = schemas.InputArguments.parse_obj(initial_step.init_args)
-        bucket = args.get_output_bucket()
+        tenant = utils.tenant_from_bucket(args.get_output_bucket())
         if pipeline_type == schemas.PipelineTypes.INFERENCE:
             preprecessing_passed = await self.check_preprocessing_status(
-                bucket
+                tenant
             )
             if not preprecessing_passed:
                 return
         logger.info(f"Start executing task with id = {self.id}")
         self.change_status(schemas.Status.RUN)
-        self.send_status(pipeline_type=pipeline_type, bucket=bucket)
+        self.send_status(pipeline_type=pipeline_type, tenant=tenant)
         init_body = args.prepare_for_init(
             pipeline_type=pipeline_type, curr_step_id=str(initial_step.id)
         )
@@ -301,7 +309,8 @@ class PipelineTask(BaseModel):
         pipeline_type = self.get_pipeline_type()
         if not failed and pipeline_type == schemas.PipelineTypes.INFERENCE:
             logger.info(
-                "preparing to merge results and send it to postprocessing/annotation"
+                "preparing to merge results and "
+                "send it to postprocessing/annotation"
             )
             path_ = args.get_path()
             filename = args.get_filename()
@@ -324,8 +333,9 @@ class PipelineTask(BaseModel):
         logger.info(
             f"Task with id = {self.id} finished with status = {task_status}"
         )
+        tenant = utils.tenant_from_bucket(bucket)
         self.send_status(
-            pipeline_type=pipeline_type, bucket=bucket, token=token
+            pipeline_type=pipeline_type, tenant=tenant, token=token
         )
 
     def change_status(self, status: schemas.Status) -> None:
@@ -339,7 +349,7 @@ class PipelineTask(BaseModel):
     def send_status(
         self,
         pipeline_type: schemas.PipelineTypes,
-        bucket: Optional[str],
+        tenant: Optional[str],
         token: Optional[str] = None,
     ) -> None:
         if self.webhook is None:
@@ -355,7 +365,7 @@ class PipelineTask(BaseModel):
                 webhook=self.webhook, task_id=self.id, task_status=self.status
             )
         if url and body:
-            webhooks.send_webhook(url, body, token, bucket)
+            webhooks.send_webhook(url, body, token, tenant)
 
     def get_pipeline_type(self) -> schemas.PipelineTypes:
         pipeline = service.run_in_session(
@@ -369,7 +379,7 @@ class PipelineTask(BaseModel):
         file_id = file_path.split("/")[1]
         return int(file_id)
 
-    async def check_preprocessing_status(self, bucket: str) -> bool:
+    async def check_preprocessing_status(self, tenant: str) -> bool:
         """Checks preprocessing status of task file.
         If the status is 'preprocessing in progress', waits and tries again.
         If the status is "failed" or the number of retries is exceeded,
@@ -388,7 +398,7 @@ class PipelineTask(BaseModel):
         timeout = config.FILE_STATUS_TIMEOUT
         for retry in range(1, int(max_retries) + 1):
             file_status = http_utils.get_file_status(
-                file_id=file_id, bucket=bucket
+                file_id=file_id, tenant=tenant
             )
             if file_status == schemas.PreprocessingStatus.PREPROCESSED:
                 return True
