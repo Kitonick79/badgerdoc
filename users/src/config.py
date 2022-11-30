@@ -22,6 +22,7 @@ ADMIN_CLIENT_SECRET = os.getenv(
 MINIO_URI = os.getenv("MINIO_URI", "")
 MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
 MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin")
+S3_PREFIX = os.getenv("S3_PREFIX", "")
 
 # app settings.
 ROOT_PATH = os.getenv("ROOT_PATH", "")

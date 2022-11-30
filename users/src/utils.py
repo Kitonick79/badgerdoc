@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 import src.minio_storage as ms
-from src.config import KEYCLOAK_ENDPOINT
+from src import config
 
 minio_client = ms.get_minio_client()
 
@@ -15,9 +15,11 @@ def extract_idp_data_needed(
     for alias in IDP_aliases:
         IDP_info = {
             "Alias": alias,
-            "Auth link": f"{KEYCLOAK_ENDPOINT}/auth/realms/master/protocol/openid-connect/auth?"
+            "Auth link": f"{config.KEYCLOAK_ENDPOINT}"
+            f"/auth/realms/master/protocol/openid-connect/auth?"
             f"client_id=BadgerDoc&response_type=token&"
-            f"redirect_uri={KEYCLOAK_ENDPOINT}/login&kc_idp_hint={alias}",
+            f"redirect_uri={config.KEYCLOAK_ENDPOINT}"
+            f"/login&kc_idp_hint={alias}",
         }
         IDPs_info.append(IDP_info)
 
@@ -39,3 +41,7 @@ def delete_file_after_7_days(
         for file in files:
             if file.last_modified + delta <= today:
                 minio_client.remove_object(bucket.name, file.object_name)
+
+
+def get_bucket_name(tenant: str) -> str:
+    return f"{config.S3_PREFIX}-{tenant}" if config.S3_PREFIX else tenant

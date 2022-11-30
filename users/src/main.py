@@ -173,12 +173,13 @@ async def get_tenants(
 async def create_tenant(
     tenant: str = Query(..., regex="^[a-z0-9][a-z0-9\\.\\-]{1,61}[a-z0-9]$"),
     token: TenantData = Depends(tenant),
+    bucket: str = Depends(utils.get_bucket_name),
     current_tenant: Optional[str] = Header(None, alias="X-Current-Tenant"),
 ) -> Dict[str, str]:
     """Create new tenant."""
     check_authorization(token, KEYCLOAK_ROLE_ADMIN)
     try:
-        ms.create_bucket(minio_client, tenant)
+        ms.create_bucket(minio_client, bucket)
     except MaxRetryError:
         raise HTTPException(
             status_code=503, detail="Cannot connect to the Minio."
@@ -243,7 +244,9 @@ async def get_users_by_filter(
 
     if filters.get("role") is not None:
         users_list = await kc_query.get_users_by_role(
-            token=token.token, realm=realm, role=filters.get("role").value  # type: ignore
+            token=token.token,
+            realm=realm,
+            role=filters.get("role").value,  # type: ignore
         )
     else:
         users_list = await kc_query.get_users_v2(
