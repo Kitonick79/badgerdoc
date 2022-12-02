@@ -17,15 +17,7 @@ from sqlalchemy import orm
 import src.db.models as dbm
 import src.db.service as service
 import src.result_processing as postprocessing
-from src import (
-    config,
-    http_utils,
-    log,
-    schemas,
-    service_token,
-    utils,
-    webhooks,
-)
+from src import config, http_utils, log, s3, schemas, service_token, webhooks
 
 logger = log.get_logger(__file__)
 
@@ -273,7 +265,7 @@ class PipelineTask(BaseModel):
         pipeline_type = self.get_pipeline_type()
         initial_step = [step for step in self.steps if step.init_args][0]
         args = schemas.InputArguments.parse_obj(initial_step.init_args)
-        tenant = utils.tenant_from_bucket(args.get_output_bucket())
+        tenant = s3.tenant_from_bucket(args.get_output_bucket())
         if pipeline_type == schemas.PipelineTypes.INFERENCE:
             preprecessing_passed = await self.check_preprocessing_status(
                 tenant
@@ -333,7 +325,7 @@ class PipelineTask(BaseModel):
         logger.info(
             f"Task with id = {self.id} finished with status = {task_status}"
         )
-        tenant = utils.tenant_from_bucket(bucket)
+        tenant = s3.tenant_from_bucket(bucket)
         self.send_status(
             pipeline_type=pipeline_type, tenant=tenant, token=token
         )

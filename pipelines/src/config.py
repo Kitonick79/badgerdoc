@@ -49,11 +49,13 @@ DB_URI = os.getenv(
     f"@{DB_HOST}:{DB_PORT}/{DB_NAME}",
 )
 
-# Minio settings.
-MINIO_URI = os.getenv("MINIO_URI", "")
-MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
-MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin")
+# S3 settings
+S3_CREDENTIALS_PROVIDER = os.getenv("S3_CREDENTIALS_PROVIDER")
 S3_PREFIX = os.getenv("S3_PREFIX", "")
+S3_ENDPOINT = os.getenv("S3_ENDPOINT")
+S3_ACCESS_KEY = os.getenv("S3_ACCESS_KEY")
+S3_SECRET_KEY = os.getenv("S3_SECRET_KEY")
+AWS_PROFILE = os.getenv("AWS_PROFILE")
 
 # Keycloak settings
 KEYCLOAK_URI = os.getenv("KEYCLOAK_URI", "http://dev1.badgerdoc.com")

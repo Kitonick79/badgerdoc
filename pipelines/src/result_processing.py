@@ -10,7 +10,7 @@ from minio import Minio
 from minio import error as minioerr
 from pydantic import BaseModel, ValidationError
 
-from src import config, http_utils, log, utils
+from src import config, http_utils, log, s3
 
 logger = log.get_logger(__file__)
 
@@ -202,19 +202,6 @@ ModelOutput.update_forward_refs()
 Page.update_forward_refs()
 
 
-def get_minio_client() -> Optional[Minio]:
-    """Return Minio client if URI is provided via config.py."""
-    if not config.MINIO_URI:
-        logger.error("MINIO_URI is None")
-        return None
-    return Minio(
-        endpoint=config.MINIO_URI,
-        access_key=config.MINIO_ACCESS_KEY,
-        secret_key=config.MINIO_SECRET_KEY,
-        secure=False,
-    )
-
-
 def get_annotation_uri(
     job_id: Union[str, int], file_id: Union[str, int]
 ) -> Optional[str]:
@@ -357,7 +344,7 @@ def manage_result_for_annotator(
     :param token: service token.
     :return: True if succeeded.
     """
-    client = get_minio_client()
+    client = s3.get_minio_client()
     uri = get_annotation_uri(job_id, file_id)
     if client is None or uri is None:
         logger.error("minio client or annotation uri are None")
@@ -373,7 +360,7 @@ def manage_result_for_annotator(
         "bucket": file_bucket,
         "input": merged_data.dict(exclude_none=True),
     }
-    tenant = utils.tenant_from_bucket(bucket)
+    tenant = s3.tenant_from_bucket(bucket)
     headers = {"X-Current-Tenant": tenant, "Authorization": f"Bearer {token}"}
     postprocessed_data = postprocess_result(
         data_for_postprocessor, headers=headers

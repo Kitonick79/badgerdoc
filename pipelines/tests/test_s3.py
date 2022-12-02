@@ -1,8 +1,14 @@
 from unittest.mock import patch
 
+import minio
 import pytest
 
-from src import utils
+from src import s3
+
+
+def test_get_minio_client():
+    """Testing get_minio_client."""
+    assert isinstance(s3.get_minio_client(), minio.Minio)
 
 
 @pytest.mark.parametrize(
@@ -16,4 +22,4 @@ from src import utils
 )
 def test_tenant_from_bucket(prefix: str, bucket: str, expected: str) -> None:
     with patch("src.config.S3_PREFIX", prefix):
-        assert utils.tenant_from_bucket(bucket) == expected
+        assert s3.tenant_from_bucket(bucket) == expected

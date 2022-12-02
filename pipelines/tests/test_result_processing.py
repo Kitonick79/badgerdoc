@@ -1,8 +1,8 @@
 """Testing src/result_processing.py."""
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
-from minio import Minio, S3Error
+from minio import S3Error
 
 import src.result_processing as processing
 
@@ -170,20 +170,9 @@ def test_merge_geometry_objects():
 
 
 def test_merge_geometry_objects_no_objects_provided():
-    """Testing merge of GeometryObject when objects for merge are not provided."""
+    """Objects for merge are not provided."""
     with pytest.raises(ValueError, match="No GeometryObjects to merge"):
         assert processing.GeometryObject.merge([])
-
-
-def test_get_minio_client():
-    """Testing get_minio_client."""
-    assert isinstance(processing.get_minio_client(), Minio)
-
-
-def test_get_minio_client_no_uri():
-    """Testing get_minio_client when MINIO_URI is not provided."""
-    with patch("src.result_processing.config.MINIO_URI", ""):
-        assert processing.get_minio_client() is None
 
 
 @pytest.mark.parametrize(
@@ -251,11 +240,11 @@ def test_get_pipeline_leaves_data_minio_error():
 def test_merge_pipeline_leaves_data():
     """Testing merge_pipeline_leaves_data."""
     leaves_data = [
-        b'{"pages": [{"page_num": 1, "size": {"width": 1, "height": 2}, "objs": '
-        b'[{"id": 0, "bbox": [1, 1, 1, 1], "category": "some", '
+        b'{"pages": [{"page_num": 1, "size": {"width": 1, "height": 2}, '
+        b'"objs": [{"id": 0, "bbox": [1, 1, 1, 1], "category": "some", '
         b'"data": {"a": 0}}]}]}',
-        b'{"pages": [{"page_num": 1, "size": {"width": 1, "height": 2}, "objs": '
-        b'[{"id": 0, "bbox": [1, 1, 1, 1], "category": "some", '
+        b'{"pages": [{"page_num": 1, "size": {"width": 1, "height": 2}, '
+        b'"objs": [{"id": 0, "bbox": [1, 1, 1, 1], "category": "some", '
         b'"data": {"a": 1, "b": 2}}, '
         b'{"id": 3, "bbox": [3, 3, 3, 3], "category": "some"}]}]}',
     ]
@@ -380,7 +369,7 @@ def test_postprocess_result_no_uri():
 
 
 def test_postprocess_result_invalid_postprocessor_json_response():
-    """Testing postprocess_result when postprocessor return invalid json format."""
+    """Postprocessor return invalid json format."""
     m = MagicMock
     m.content = b'{"asd":}'
     with patch(
@@ -427,7 +416,7 @@ def test_manage_result_for_annotator():
 
 def test_manage_result_for_annotator_no_client():
     """Testing manage_result_for_annotator when there's no Minio client."""
-    with patch("src.result_processing.get_minio_client", return_value=None):
+    with patch("src.s3.get_minio_client", return_value=None):
         assert not processing.manage_result_for_annotator(
             "", "", "", "", "", "", 8, ""
         )
@@ -465,7 +454,7 @@ def test_manage_result_for_annotator_request_not_succeeded():
 
 
 def test_manage_result_for_annotator_request_debug_merge():
-    """Testing manage_result_for_annotator when debug merge is True and data are not deleted."""
+    """Debug merge is True and data are not deleted."""
     with patch("src.result_processing.merge_pipeline_leaves_data"):
         with patch("src.result_processing.postprocess_result"):
             with patch(
