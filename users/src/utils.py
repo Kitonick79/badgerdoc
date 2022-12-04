@@ -1,10 +1,9 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
-import src.minio_storage as ms
-from src import config
+from src import config, s3
 
-minio_client = ms.get_minio_client()
+minio_client = s3.get_minio_client()
 
 
 def extract_idp_data_needed(

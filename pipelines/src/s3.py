@@ -1,8 +1,7 @@
 import enum
 from typing import Any, Dict, Optional
 
-import minio
-from minio import credentials
+from minio import Minio, credentials
 
 from src import config, log
 
@@ -38,7 +37,7 @@ def get_minio_config(
     return minio_config
 
 
-def get_minio_client() -> minio.Minio:
+def get_minio_client() -> Minio:
     """Return Minio client if URI is provided via config.py."""
     s3_provider = S3Providers(config.S3_CREDENTIALS_PROVIDER)
     logger.info("S3_CREDENTIALS_PROVIDER is set to %s", s3_provider)
@@ -49,7 +48,7 @@ def get_minio_client() -> minio.Minio:
         secret_key=config.S3_SECRET_KEY,
         aws_profile=config.AWS_PROFILE,
     )
-    return minio.Minio(**minio_config)
+    return Minio(**minio_config)
 
 
 def tenant_from_bucket(bucket: str) -> str:

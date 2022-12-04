@@ -1,11 +1,12 @@
 from typing import Any, Dict, List, TypedDict, Union
 
 import aiohttp
+from fastapi import HTTPException, status
+
 import src.config as config
 import src.keycloak.resources as resources
 import src.keycloak.schemas as schemas
-from fastapi import HTTPException, status
-from src.logger import logger
+from src import logger
 
 
 class AuthData(TypedDict):
@@ -75,7 +76,8 @@ async def get_users_by_role(
 
 
 async def get_token_v2(
-    realm: str, request_form: Union[schemas.TokenRequest, schemas.RefreshTokenRequest]
+    realm: str,
+    request_form: Union[schemas.TokenRequest, schemas.RefreshTokenRequest],
 ) -> schemas.TokenResponse:
     """Get access token.
 
@@ -131,8 +133,9 @@ async def get_user(realm: str, token: str, user_id: str) -> schemas.User:
     url = resources.user_uri.substitute(realm=realm, id=user_id)
     method = "GET"
     headers = create_bearer_header(token)
-    logger.info(
-        "Sending request to Keycloak REST API url= %s to get user_info by user_id= %s. Deprecating endpoint",
+    logger.Logger.info(
+        "Sending request to Keycloak url: %s to get user_info user_id: %s. "
+        "Deprecating endpoint",
         url,
         user_id,
     )
@@ -153,8 +156,8 @@ async def introspect_token(token: str) -> Token_Data:
         "client_id": "BadgerDoc",
         "client_secret": config.BADGERDOC_CLIENT_SECRET,
     }
-    logger.info(
-        f"Sending request to Keycloak REST API url= %s to get user_info by data from token= %s",
+    logger.Logger.info(
+        "Sending request to Keycloak url: %s to get user_info token: %s",
         url,
         token,
     )
@@ -172,12 +175,12 @@ async def introspect_token(token: str) -> Token_Data:
             )
             return data_to_return
     except aiohttp.ClientConnectionError as e:
-        logger.error(
-            f"Exception while sending request to Keycloak REST API: %s", e
+        logger.Logger.error(
+            "Exception while sending request to Keycloak: %s", e
         )
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Exception while sending request to Keycloak REST API: {e}",
+            detail=f"Exception while sending request to Keycloak: {e}",
         )
 
 
@@ -279,8 +282,9 @@ async def get_master_realm_auth_data() -> AuthData:
         "grant_type": "password",
     }
     url = resources.token_uri.substitute(realm="master")
-    logger.info(
-        f"Sending request to Keycloak REST API url= %s to get admin authentification data with payload= %s",
+    logger.Logger.info(
+        "Sending request to Keycloak url: %s to get admin auth data, "
+        "payload: %s",
         url,
         payload,
     )
@@ -298,12 +302,12 @@ async def get_master_realm_auth_data() -> AuthData:
             return data_to_return
 
     except aiohttp.ClientConnectionError as e:
-        logger.error(
-            f"Exception while sending request to Keycloak REST API: %s", e
+        logger.Logger.error(
+            "Exception while sending request to Keycloak: %s", e
         )
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Exception while sending request to Keycloak REST API: {e}",
+            detail=f"Exception while sending request to Keycloak: {e}",
         )
 
 
@@ -312,10 +316,9 @@ async def get_identity_providers_data(
 ) -> Any:
     """Get all data about Identity Providers set in Keycloak"""
     headers = {"Authorization": f"Bearer {master_realm_access_token}"}
-    # url = "http://dev2.gcov.ru/auth/admin/realms/master/identity-provider/instances"
     url = resources.identity_providers_uri.substitute(realm="master")
-    logger.info(
-        "Sending request to Keycloak REST API %s to get identity providers data",
+    logger.Logger.info(
+        "Sending request to Keycloak url: %s to get identity providers data",
         url,
     )
     try:
@@ -328,10 +331,10 @@ async def get_identity_providers_data(
             return await resp.json()
 
     except aiohttp.ClientConnectionError as e:
-        logger.error(
-            f"Exception while sending request to Keycloak REST API: %s", e
+        logger.Logger.error(
+            "Exception while sending request to Keycloak: %s", e
         )
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Exception while sending request to Keycloak REST API: {e}",
+            detail=f"Exception while sending request to Keycloak: {e}",
         )

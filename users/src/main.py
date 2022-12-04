@@ -2,18 +2,21 @@ from typing import Any, Callable, Dict, List, Optional
 
 import aiohttp
 import pydantic
-import src.config as conf
-import src.keycloak.query as kc_query
-import src.keycloak.schemas as kc_schemas
-import src.keycloak.utils as kc_utils
-import src.minio_storage as ms
-import src.utils as utils
 from aiohttp.web_exceptions import HTTPException as AIOHTTPException
 from apscheduler.schedulers.background import BackgroundScheduler
 from email_validator import EmailNotValidError, validate_email
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
+from tenant_dependency import TenantData, get_tenant_info
+from urllib3.exceptions import MaxRetryError
+
+import src.config as conf
+import src.keycloak.query as kc_query
+import src.keycloak.schemas as kc_schemas
+import src.keycloak.utils as kc_utils
+import src.utils as utils
+from src import s3
 from src.config import (
     KEYCLOAK_ROLE_ADMIN,
     KEYCLOAK_USERS_PUBLIC_KEY,
@@ -23,12 +26,10 @@ from src.schemas import Users
 
 # TODO: move response messages to somewhere.
 from src.utils import delete_file_after_7_days
-from tenant_dependency import TenantData, get_tenant_info
-from urllib3.exceptions import MaxRetryError
 
 app = FastAPI(title="users", root_path=ROOT_PATH, version="0.1.2")
 realm = conf.KEYCLOAK_REALM
-minio_client = ms.get_minio_client()
+minio_client = s3.get_minio_client()
 
 tenant = get_tenant_info(
     KEYCLOAK_USERS_PUBLIC_KEY, algorithm="RS256", debug=True
@@ -179,7 +180,7 @@ async def create_tenant(
     """Create new tenant."""
     check_authorization(token, KEYCLOAK_ROLE_ADMIN)
     try:
-        ms.create_bucket(minio_client, bucket)
+        s3.create_bucket(minio_client, bucket)
     except MaxRetryError:
         raise HTTPException(
             status_code=503, detail="Cannot connect to the Minio."
