@@ -84,7 +84,7 @@ def get_request_session(*args: List[Any], **kwargs: Dict[str, Any]) -> Session:
 
 
 settings = Settings()
-logger_.info(f"")
+logger_.info(f"{settings.s3_credentials_provider=}")
 
 
 class NotConfiguredException(Exception):
