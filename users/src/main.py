@@ -2,30 +2,25 @@ from typing import Any, Callable, Dict, List, Optional
 
 import aiohttp
 import pydantic
+import src.config as conf
+import src.keycloak.query as kc_query
+import src.keycloak.schemas as kc_schemas
+import src.keycloak.utils as kc_utils
 from aiohttp.web_exceptions import HTTPException as AIOHTTPException
 from apscheduler.schedulers.background import BackgroundScheduler
 from email_validator import EmailNotValidError, validate_email
 from fastapi import Depends, FastAPI, Header, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
-from tenant_dependency import TenantData, get_tenant_info
-from urllib3.exceptions import MaxRetryError
-
-import src.config as conf
-import src.keycloak.query as kc_query
-import src.keycloak.schemas as kc_schemas
-import src.keycloak.utils as kc_utils
-import src.utils as utils
-from src import s3
+from src import s3, utils
 from src.config import (
     KEYCLOAK_ROLE_ADMIN,
     KEYCLOAK_USERS_PUBLIC_KEY,
     ROOT_PATH,
 )
 from src.schemas import Users
-
-# TODO: move response messages to somewhere.
-from src.utils import delete_file_after_7_days
+from tenant_dependency import TenantData, get_tenant_info
+from urllib3.exceptions import MaxRetryError
 
 app = FastAPI(title="users", root_path=ROOT_PATH, version="0.1.2")
 realm = conf.KEYCLOAK_REALM
@@ -284,5 +279,10 @@ async def get_idp_names_and_SSOauth_links() -> Dict[str, List[Dict[str, str]]]:
 @app.on_event("startup")
 def periodic() -> None:
     scheduler = BackgroundScheduler()
-    scheduler.add_job(delete_file_after_7_days, "cron", hour="*/1")
+    scheduler.add_job(
+        utils.delete_file_after_7_days,
+        kwargs={"client": minio_client},
+        trigger="cron",
+        hour="*/1",
+    )
     scheduler.start()

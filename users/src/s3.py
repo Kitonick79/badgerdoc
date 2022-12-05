@@ -2,7 +2,6 @@ import enum
 from typing import Any, Dict, Optional
 
 from minio import Minio, credentials
-
 from src import config, logger
 
 
@@ -38,7 +37,7 @@ def get_minio_config(
 def get_minio_client() -> Minio:
     """Return Minio client if URI is provided via config.py."""
     s3_provider = S3Providers(config.S3_CREDENTIALS_PROVIDER)
-    logger.Logger.info("S3_CREDENTIALS_PROVIDER is set to %s", s3_provider)
+    logger.Logger.debug("S3_CREDENTIALS_PROVIDER is set to %s", s3_provider)
     minio_config = get_minio_config(
         s3_provider=s3_provider,
         endpoint=config.S3_ENDPOINT,
@@ -57,4 +56,7 @@ def create_bucket(
 ) -> None:
     """Create minio bucket."""
     if not client.bucket_exists(bucket_name):
+        logger.Logger.debug(
+            "Creating new bucket, name=%s, location=%s", bucket_name, location
+        )
         client.make_bucket(bucket_name, location, object_lock)

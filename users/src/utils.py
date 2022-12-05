@@ -1,9 +1,8 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
-from src import config, s3
-
-minio_client = s3.get_minio_client()
+from minio import Minio
+from src import config
 
 
 def extract_idp_data_needed(
@@ -26,20 +25,18 @@ def extract_idp_data_needed(
 
 
 def delete_file_after_7_days(
-    days: Optional[int] = 7, prefix: Optional[str] = "coco/"
+    client: Minio, days: Optional[int] = 7, prefix: Optional[str] = "coco/"
 ) -> None:
     """Check files from all buckets with input prefix
     and delete files with old last modified"""
-    buckets = minio_client.list_buckets()
+    buckets = client.list_buckets()
     delta = timedelta(days=days)
     today = datetime.now(timezone.utc)
     for bucket in buckets:
-        files = minio_client.list_objects(
-            bucket.name, recursive=True, prefix=prefix
-        )
+        files = client.list_objects(bucket.name, recursive=True, prefix=prefix)
         for file in files:
             if file.last_modified + delta <= today:
-                minio_client.remove_object(bucket.name, file.object_name)
+                client.remove_object(bucket.name, file.object_name)
 
 
 def get_bucket_name(tenant: str) -> str:
