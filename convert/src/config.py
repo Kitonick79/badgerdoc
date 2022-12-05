@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
+from dotenv import find_dotenv
+
 import boto3
 from botocore.client import BaseClient
 from mypy_extensions import KwArg, VarArg
@@ -21,7 +23,8 @@ class Settings(BaseSettings):
     minio_host: Optional[str] = os.getenv("MINIO_HOST")
     minio_access_key: Optional[str] = os.getenv("MINIO_ACCESS_KEY")
     minio_secret_key: Optional[str] = os.getenv("MINIO_SECRET_KEY")
-    s3_prefix: Optional[str] = os.getenv("S3_PREFIX")
+    s3_prefix: Optional[str] = os.getenv("S3_PREFIX", "prefix")
+    # TODO: revert default prefix assignment!!!
     s3_credentials_provider: Optional[str] = os.getenv(
         "S3_CREDENTIALS_PROVIDER", "minio"
     )
@@ -36,6 +39,9 @@ class Settings(BaseSettings):
     annotation_service_url: Optional[str] = os.getenv("ANNOTATION_SERVICE_URL")
     keycloak_url: Optional[str] = os.getenv("KEYCLOAK_URL")
 
+    class Config:
+        env_file: str = find_dotenv(".env")
+        env_file_encoding = "utf-8"
 
 def get_version() -> str:
     default = "0.1.0"
@@ -78,6 +84,7 @@ def get_request_session(*args: List[Any], **kwargs: Dict[str, Any]) -> Session:
 
 
 settings = Settings()
+logger_.info(f"")
 
 
 class NotConfiguredException(Exception):
