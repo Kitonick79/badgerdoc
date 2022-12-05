@@ -1,11 +1,10 @@
 from typing import Any, Dict, List, TypedDict, Union
 
 import aiohttp
-from fastapi import HTTPException, status
-
 import src.config as config
 import src.keycloak.resources as resources
 import src.keycloak.schemas as schemas
+from fastapi import HTTPException, status
 from src import logger
 
 
@@ -148,7 +147,6 @@ async def get_user(realm: str, token: str, user_id: str) -> schemas.User:
 async def introspect_token(token: str) -> Token_Data:
     """Introspects token data by sending request to Keycloak REST API"""
     url = resources.token_introspection_uri.substitute(realm="master")
-    print(url)
     method = "POST"
     headers = create_bearer_header(token)
     payload = {
@@ -157,9 +155,8 @@ async def introspect_token(token: str) -> Token_Data:
         "client_secret": config.BADGERDOC_CLIENT_SECRET,
     }
     logger.Logger.info(
-        "Sending request to Keycloak url: %s to get user_info token: %s",
+        "Sending request to Keycloak url: %s to get user_info",
         url,
-        token,
     )
     try:
         async with aiohttp.request(
