@@ -10,7 +10,7 @@ from minio import Minio
 from minio import error as minioerr
 from pydantic import BaseModel, ValidationError
 
-from src import config, http_utils, log, s3
+from src import config, http_utils, log
 
 logger = log.get_logger(__file__)
 
@@ -323,28 +323,31 @@ def postprocess_result(
 
 def manage_result_for_annotator(
     bucket: str,
+    tenant: str,
     path_: str,
     job_id: int,
     file_bucket: str,
     filepath: str,
     file_id: str,
     pipeline_id: int,
+    client: Minio,
     token: Optional[str],
 ) -> bool:
     """Manage result for by merging step results and sending it
     to Annotation Manager.
 
     :param bucket: Bucket with step results.
+    :param tenant: Tenant name to use.
     :param job_id: Job id in which task is done.
     :param file_bucket: Bucket of the file.
     :param filepath: File path.
     :param path_: Path of the step results.
     :param file_id: File id (filename without extension).
     :param pipeline_id: id of executing pipeline.
+    :param client: Client to connect to s3.
     :param token: service token.
     :return: True if succeeded.
     """
-    client = s3.get_minio_client()
     uri = get_annotation_uri(job_id, file_id)
     if client is None or uri is None:
         logger.error("minio client or annotation uri are None")
@@ -360,7 +363,6 @@ def manage_result_for_annotator(
         "bucket": file_bucket,
         "input": merged_data.dict(exclude_none=True),
     }
-    tenant = s3.tenant_from_bucket(bucket)
     headers = {"X-Current-Tenant": tenant, "Authorization": f"Bearer {token}"}
     postprocessed_data = postprocess_result(
         data_for_postprocessor, headers=headers

@@ -40,7 +40,7 @@ def get_minio_config(
 def get_minio_client() -> Minio:
     """Return Minio client if URI is provided via config.py."""
     s3_provider = S3Providers(config.S3_CREDENTIALS_PROVIDER)
-    logger.info("S3_CREDENTIALS_PROVIDER is set to %s", s3_provider)
+    logger.debug("S3_CREDENTIALS_PROVIDER is set to %s", s3_provider)
     minio_config = get_minio_config(
         s3_provider=s3_provider,
         endpoint=config.S3_ENDPOINT,

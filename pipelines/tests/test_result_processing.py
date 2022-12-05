@@ -400,7 +400,7 @@ def test_manage_result_for_annotator():
                             "f.com/annotation",
                         ):
                             assert processing.manage_result_for_annotator(
-                                "", "", "", "", "", "", 1, ""
+                                "", "", "", 0, "", "", "", 1, MagicMock(), ""
                             )
                             req_mock.assert_called_once_with(
                                 "f.com/annotation/annotation",
@@ -414,19 +414,11 @@ def test_manage_result_for_annotator():
                             del_mock.assert_called_once()
 
 
-def test_manage_result_for_annotator_no_client():
-    """Testing manage_result_for_annotator when there's no Minio client."""
-    with patch("src.s3.get_minio_client", return_value=None):
-        assert not processing.manage_result_for_annotator(
-            "", "", "", "", "", "", 8, ""
-        )
-
-
 def test_manage_result_for_annotator_no_annotator_uri():
     """Testing manage_result_for_annotator when there's no Annotator URI."""
     with patch("src.result_processing.config.ANNOTATION_URI", ""):
         assert not processing.manage_result_for_annotator(
-            "", "", "", "", "", "", 8, ""
+            "", "", "", 0, "", "", "", 8, MagicMock(), ""
         )
 
 
@@ -436,7 +428,7 @@ def test_manage_result_for_annotator_cannot_merge_data():
         "src.result_processing.merge_pipeline_leaves_data", return_value=None
     ):
         assert not processing.manage_result_for_annotator(
-            "", "", "", "", "", "", 8, ""
+            "", "", "", 0, "", "", "", 8, MagicMock(), ""
         )
 
 
@@ -449,7 +441,7 @@ def test_manage_result_for_annotator_request_not_succeeded():
                 return_value=None,
             ):
                 assert not processing.manage_result_for_annotator(
-                    "", "", "", "", "", "", 8, ""
+                    "", "", "", 0, "", "", "", 8, MagicMock(), ""
                 )
 
 
@@ -465,6 +457,6 @@ def test_manage_result_for_annotator_request_debug_merge():
                         "src.result_processing.delete_objects"
                     ) as del_mock:
                         assert processing.manage_result_for_annotator(
-                            "", "", "", "", "", "", 8, ""
+                            "", "", "", 0, "", "", "", 8, MagicMock(), ""
                         )
                         del_mock.assert_not_called()

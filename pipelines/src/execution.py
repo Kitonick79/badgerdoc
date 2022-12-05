@@ -20,6 +20,7 @@ import src.result_processing as postprocessing
 from src import config, http_utils, log, s3, schemas, service_token, webhooks
 
 logger = log.get_logger(__file__)
+minio_client = s3.get_minio_client()
 
 # Exception messages
 PIPELINE_EXISTS = (
@@ -310,12 +311,14 @@ class PipelineTask(BaseModel):
             filepath = args.file
             postprocessing_status = postprocessing.manage_result_for_annotator(
                 bucket=bucket,
+                tenant=s3.tenant_from_bucket(bucket),
                 path_=path_,
                 job_id=self.job_id,  # type: ignore
                 file_bucket=file_bucket,
                 filepath=filepath,
                 file_id=filename,
                 pipeline_id=self.pipeline_id,
+                client=minio_client,
                 token=token,
             )
             failed = not postprocessing_status
