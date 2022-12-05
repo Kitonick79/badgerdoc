@@ -2,8 +2,6 @@ import os
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-from dotenv import find_dotenv
-
 import boto3
 from botocore.client import BaseClient
 from mypy_extensions import KwArg, VarArg
@@ -39,9 +37,6 @@ class Settings(BaseSettings):
     annotation_service_url: Optional[str] = os.getenv("ANNOTATION_SERVICE_URL")
     keycloak_url: Optional[str] = os.getenv("KEYCLOAK_URL")
 
-    class Config:
-        env_file: str = find_dotenv(".env")
-        env_file_encoding = "utf-8"
 
 def get_version() -> str:
     default = "0.1.0"
