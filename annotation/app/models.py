@@ -6,7 +6,9 @@ from sqlalchemy import (
     CheckConstraint,
     Column,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
+    PrimaryKeyConstraint,
     Table,
     func,
 )
@@ -79,13 +81,13 @@ class AnnotatedDoc(Base):
     __tablename__ = "annotated_docs"
 
     revision = Column(VARCHAR, primary_key=True)
+    file_id = Column(INTEGER, primary_key=True)
+    job_id = Column(INTEGER, primary_key=True)
     user = Column(
         UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="SET NULL")
     )
     pipeline = Column(INTEGER)
     date = Column(TIMESTAMP, server_default=func.now(), nullable=False)
-    file_id = Column(INTEGER, primary_key=True)
-    job_id = Column(INTEGER, primary_key=True)
     pages = Column(JSON, nullable=False, server_default="{}")
     failed_validation_pages = Column(
         ARRAY(INTEGER), nullable=False, server_default="{}"
@@ -95,6 +97,32 @@ class AnnotatedDoc(Base):
     task_id = Column(INTEGER, ForeignKey("tasks.id", ondelete="SET NULL"))
 
     tasks = relationship("ManualAnnotationTask", back_populates="docs")
+    similar_docs = relationship(
+        "AnnotatedDoc",
+        secondary="document_links",
+        primaryjoin="and_("
+        "AnnotatedDoc.revision==DocumentLinks.original_revision,"
+        "AnnotatedDoc.file_id==DocumentLinks.original_file_id,"
+        "AnnotatedDoc.job_id==DocumentLinks.original_job_id)",
+        secondaryjoin="and_("
+        "AnnotatedDoc.revision==DocumentLinks.similar_revision,"
+        "AnnotatedDoc.file_id==DocumentLinks.similar_file_id,"
+        "AnnotatedDoc.job_id==DocumentLinks.similar_job_id)",
+    )
+    links = relationship(
+        "DocumentLinks",
+        foreign_keys="[DocumentLinks.original_revision, "
+        "DocumentLinks.original_file_id, "
+        "DocumentLinks.original_job_id]",
+    )
+
+    def __repr__(self) -> str:
+        return (
+            "<AnnotatedDoc("
+            f"revision={self.revision!r}, "
+            f"file_id={self.file_id!r}, "
+            f"job_id={self.job_id!r})>"
+        )
 
 
 class Category(Base):
@@ -244,3 +272,51 @@ class ManualAnnotationTask(Base):
     user = relationship("User", back_populates="tasks")
     jobs = relationship("Job", back_populates="tasks")
     docs = relationship("AnnotatedDoc", back_populates="tasks")
+
+
+class DocumentLinks(Base):
+    __tablename__ = "document_links"
+
+    original_revision = Column(VARCHAR)
+    original_file_id = Column(INTEGER)
+    original_job_id = Column(INTEGER)
+
+    similar_revision = Column(VARCHAR)
+    similar_file_id = Column(INTEGER)
+    similar_job_id = Column(INTEGER)
+
+    label = Column(VARCHAR, nullable=False)
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            (original_revision, original_file_id, original_job_id),
+            (AnnotatedDoc.revision, AnnotatedDoc.file_id, AnnotatedDoc.job_id),
+        ),
+        PrimaryKeyConstraint(
+            original_revision, original_file_id, original_job_id
+        ),
+        ForeignKeyConstraint(
+            (similar_revision, similar_file_id, similar_job_id),
+            (AnnotatedDoc.revision, AnnotatedDoc.file_id, AnnotatedDoc.job_id),
+        ),
+    )
+    original_doc = relationship(
+        "AnnotatedDoc",
+        foreign_keys=[original_revision, original_file_id, original_job_id],
+    )
+    similar_doc = relationship(
+        "AnnotatedDoc",
+        foreign_keys=[similar_revision, similar_file_id, similar_job_id],
+    )
+
+    def __repr__(self) -> str:
+        return (
+            "<DocumentLinks("
+            f"original_revision={self.original_revision}, "
+            f"original_file_id={self.original_file_id}, "
+            f"original_job_id={self.original_job_id}, "
+            f"similar_revision={self.similar_revision}, "
+            f"similar_file_id={self.similar_file_id}, "
+            f"similar_job_id={self.similar_job_id}, "
+            f"label={self.label})>"
+        )

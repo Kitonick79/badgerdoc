@@ -4,6 +4,7 @@ from app.schemas.annotations import (
     PageOutSchema,
     PageSchema,
     ParticularRevisionSchema,
+    RevisionLink,
 )
 from app.schemas.categories import (
     CategoryBaseSchema,
@@ -58,6 +59,7 @@ __all__ = [
     PageOutSchema,
     PageSchema,
     ParticularRevisionSchema,
+    RevisionLink,
     CategoryBaseSchema,
     CategoryInputSchema,
     CategoryORMSchema,
