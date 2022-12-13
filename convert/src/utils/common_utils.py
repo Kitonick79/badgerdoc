@@ -2,6 +2,8 @@ import os
 from typing import Any, Dict, List
 from zipfile import ZipFile
 
+from fastapi import HTTPException
+
 from src.config import minio_client, settings
 from src.exceptions import UploadLimitExceedError
 
@@ -30,3 +32,10 @@ def add_to_zip_and_local_remove(file: str, zip_file: ZipFile) -> None:
 
 def get_headers(token: str, tenant: str) -> Dict[str, str]:
     return {"X-Current-Tenant": tenant, "Authorization": token}
+
+
+def raise_request_exception(error: str):
+    raise HTTPException(
+        status_code=500,
+        detail=f"Error: {error}",
+    )

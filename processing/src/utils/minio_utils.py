@@ -60,8 +60,12 @@ class MinioCommunicator:
 
     @classmethod
     def create_client(cls) -> None:
-        minio_config = create_minio_config()
-        cls.client = Minio(**minio_config)
+        cls.client = Minio(
+            endpoint=settings.minio_server,
+            access_key=settings.s3_access_key,
+            secret_key=settings.s3_secret_key,
+            secure=False,
+        )
         logger.info(
             "MinIO client for %s was created successfully",
             settings.minio_server,

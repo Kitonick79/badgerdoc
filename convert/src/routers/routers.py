@@ -1,4 +1,5 @@
 from typing import Any
+from typing import List
 from urllib.parse import urlparse
 
 import requests
@@ -14,6 +15,12 @@ from src.coco_export.export_service import (
 )
 from src.coco_import.convert import ConvertToBadgerdoc
 from src.coco_import.import_job import create_import_job
+
+from microservice_communication.assets import upload_files
+from microservice_communication.jobs import create_jobs
+from microservice_communication.jobs import start_jobs
+from microservice_communication.jobs import wait_for_end
+from microservice_communication.taxonomy import link_categories
 from src.config import minio_client, settings
 from src.logger import get_logger
 from src.models import coco
@@ -152,3 +159,25 @@ def download_dataset(
         media_type="application/zip",
         headers={"Content-Disposition": "attachment; filename=coco.zip"},
     )
+
+
+@router.post(
+    "/batch_upload",
+    status_code=status.HTTP_201_CREATED,
+    summary="Batch documents upload and job creation",
+)
+def batch_upload(
+        files: List,
+        jobs: List,
+        category_id: str,
+        taxonomy_link_params: List[dict],
+        token: TenantData = Depends(tenant),
+        current_tenant: str = Header(None, alias="X-Current-Tenant"),
+):
+    uplodaded_files_info = upload_files(files, token, current_tenant)
+    created_jobs = create_jobs(jobs, token, current_tenant)
+    linked_categories = link_categories(category_id, taxonomy_link_params, token, current_tenant)
+    wait_for_end(created_jobs, token, current_tenant)
+    start_jobs(created_jobs, token, current_tenant)
+    return {"status": status.HTTP_201_CREATED}
+
